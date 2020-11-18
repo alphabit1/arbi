@@ -30,26 +30,30 @@ function getAllPairs() {
   });
 }
 
-function findPaths(pairs: Array<any>, startCoin: string, currentCoin: string, depth = 4) {
+function findPaths(pairs: Array<any>, startCoin: string, currentCoin: string, depth = 2) {
   let currentPairs = findPairs(pairs, currentCoin);
-  console.log(currentPairs.length + ' pairs for ' + startCoin);
-  let paths = [];
+  console.log(currentPairs.length + ' pairs for ' + currentCoin);
+  let path:any[] = [];
   currentPairs.forEach((currentPair: any) => {
-    let currentCoin = currentPair.baseAsset;
-    if (currentPair.baseAsset == startCoin) {
-      currentCoin = currentPair.quoteAsset;
+    let path = []
+    let nextCoin = currentPair.baseAsset;
+    if (currentPair.baseAsset == currentCoin) {
+      nextCoin = currentPair.quoteAsset;
     }
 
-    console.log(startCoin + ' - ' + currentPair.symbol + ' - ' + currentCoin);
-
+    
+    path.push(currentPair)
     if (depth > 0) {
-      let next = findPaths(pairs, startCoin, currentCoin, depth - 1);
+      path.push(findPaths(pairs, startCoin, nextCoin, depth - 1));
+    } else {
+      // paths.push(path)
     }
     // let nextPairs = findPairs(pairs, currentCoin);
     // nextPairs.forEach(p => {
     //   console.log(currentPair.symbol + ' - ' + p.symbol);
     // });
   });
+  return path;
 }
 
 function findPairs(pairs: Array<any>, coin: String) {
@@ -63,5 +67,5 @@ function findPairs(pairs: Array<any>, coin: String) {
 }
 getAllPairs().then(res => {
   console.log(res.length + ' pairs');
-  findPaths(res, 'BTC', 'BTC', 4);
+  console.log(findPaths(res, 'BTC', 'BTC', 4).length);
 });
