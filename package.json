@@ -10,8 +10,7 @@
     "lint": "eslint -c .eslintrc.json --fix 'src/**/*.ts' 'test/**/*.test.ts'",
     "clean": "rm -rf coverage dist .nyc_output",
     "build": "npm run clean && tsc",
-    "start": "NODE_ENV='production' node dist/index.js",
-    "init": "npm run build && node dist/init.js | pino-pretty -t 'SYS:HH:MM:ss' -i hostname",
+    "start": "npm run build && NODE_ENV='production' node dist/index.js",
     "dev": "tsc-watch --onSuccess 'node --inspect=0.0.0.0:5858 dist/index.js' | pino-pretty -t 'SYS:HH:MM:ss' -i hostname",
     "test": "npm run build && mocha",
     "coverage": "npm run build && nyc mocha"

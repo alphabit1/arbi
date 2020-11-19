@@ -1,71 +1,80 @@
-import binance from 'binance';
+// import binance from 'binance';
+// import Path from './Path';
+// import PathFinder from './PathFinder';
 
-// get all pairs
-// find routes x deep
-// start ws update bid and ask
-// calc profit perc for updated bid/ask
+import Path from './Path';
+import PathFinder from './PathFinder';
+import Exchange from './Exchange';
+import BidAsk from './BidAsk';
 
-let symbolPrices: any = {};
+const pairs = [
+  {
+    symbol: 'ETHBTC',
+    status: 'TRADING',
+    baseAsset: 'ETH',
+    quoteAsset: 'BTC'
+  },
+  {
+    symbol: 'BNBBTC',
+    status: 'TRADING',
+    baseAsset: 'BNB',
+    quoteAsset: 'BTC'
+  },
+  {
+    symbol: 'BNBETH',
+    status: 'TRADING',
+    baseAsset: 'BNB',
+    quoteAsset: 'ETH'
+  },
+  {
+    symbol: 'LTCBNB',
+    status: 'TRADING',
+    baseAsset: 'LTC',
+    quoteAsset: 'BNB'
+  },
+  {
+    symbol: 'LTCBTC',
+    status: 'TRADING',
+    baseAsset: 'LTC',
+    quoteAsset: 'BTC'
+  },
+  {
+    symbol: 'XTCBTC',
+    status: 'TRADING',
+    baseAsset: 'XTC',
+    quoteAsset: 'BTC'
+  }
+];
+const bidAsk: Map<string, BidAsk> = new Map();
+const startCoins = ['BNB'];
+const exchange = new Exchange();
+exchange.getAllPairs().then(pairs => {
+  console.log(`${pairs.length} pairs`);
+  console.log(`Finding paths for ${startCoins.join(', ')}...`);
+  const finder = new PathFinder(pairs, startCoins, false);
 
-function getAllPairs() {
-  return new Promise<any>((resolve, reject) => {
-    const bRest = new binance.BinanceRest({
-      key: '', // Get this from your account on binance.com
-      secret: '', // Same for this
-      timeout: 15000, // Optional, defaults to 15000, is the request time out in milliseconds
-      recvWindow: 10000, // Optional, defaults to 5000, increase if you're getting timestamp errors
-      disableBeautification: false,
-      handleDrift: true
-    });
-    bRest.exchangeInfo().then((data: any) => {
-      let validPairs: any = [];
-      data.symbols.forEach((d: any) => {
-        if (d.status === 'TRADING') {
-          validPairs.push(d);
-          symbolPrices[d.symbol] = { bidPrice: 0, askPrice: 0 };
+  startCoins.forEach((coin: string) => {
+    let trio = finder.getByCoinTrio(coin);
+    let quad = finder.getByCoinQuad(coin);
+    let quint = finder.getByCoinQuint(coin);
+    console.log(`${coin} trio: ${trio.length} quad: ${quad.length} quint: ${quint.length}`);
+  });
+
+  exchange.startWs((data: any) => {
+    // console.time('outerloop');
+    data.forEach((market: any) => {
+      bidAsk.set(market.symbol, new BidAsk(market));
+      finder.getAll().forEach((path: Path) => {
+        if (path.hasSymbol(market.symbol)) {
+          let result: { score: number; str: string } = path.calculate(0.075, bidAsk);
+          if (result.score > 0) {
+            console.log(result.str);
+            console.log(result.score);
+            console.log();
+          }
         }
       });
-      resolve(validPairs);
     });
+    // console.timeEnd('outerloop');
   });
-}
-
-function findPaths(pairs: Array<any>, startCoin: string, currentCoin: string, depth = 2) {
-  let currentPairs = findPairs(pairs, currentCoin);
-  console.log(currentPairs.length + ' pairs for ' + currentCoin);
-  let path:any[] = [];
-  currentPairs.forEach((currentPair: any) => {
-    let path = []
-    let nextCoin = currentPair.baseAsset;
-    if (currentPair.baseAsset == currentCoin) {
-      nextCoin = currentPair.quoteAsset;
-    }
-
-    
-    path.push(currentPair)
-    if (depth > 0) {
-      path.push(findPaths(pairs, startCoin, nextCoin, depth - 1));
-    } else {
-      // paths.push(path)
-    }
-    // let nextPairs = findPairs(pairs, currentCoin);
-    // nextPairs.forEach(p => {
-    //   console.log(currentPair.symbol + ' - ' + p.symbol);
-    // });
-  });
-  return path;
-}
-
-function findPairs(pairs: Array<any>, coin: String) {
-  let result: Array<any> = [];
-  pairs.forEach((pair: any) => {
-    if (coin == pair.baseAsset || coin == pair.quoteAsset) {
-      result.push(pair);
-    }
-  });
-  return result;
-}
-getAllPairs().then(res => {
-  console.log(res.length + ' pairs');
-  console.log(findPaths(res, 'BTC', 'BTC', 4).length);
 });
