@@ -1,18 +1,21 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import Exchange, { Pair } from '../../src/Exchange';
+import Exchange from '../../src/Exchange';
+import Market from '../../src/Market';
 
-describe('get all pairs', () => {
-  it('should return all trading pairs', async () => {
+describe('get all markets', () => {
+  it('should return all trading markets', async () => {
     const exchange = new Exchange();
-    const result: Pair[] = await exchange.getAllPairs();
-    expect(result.length).to.be.greaterThan(10);
-
-    expect(result[0]).to.haveOwnProperty('symbol');
-    expect(result[0]).to.haveOwnProperty('status');
-    expect(result[0]).to.haveOwnProperty('quoteAsset');
-    expect(result[0]).to.haveOwnProperty('baseAsset');
+    const result: Map<string, Market> = await exchange.getMarkets();
+    expect(result.size).to.be.greaterThan(10);
+    expect(result.get('LTCBTC')).to.be.instanceOf(Market);
   }).timeout(15000);
+  it('should return all DEV trading markets', async () => {
+    const exchange = new Exchange();
+    const result: Map<string, Market> = await exchange.getMarkets(true);
+    expect(result.size).to.equal(5);
+    expect(result.get('LTCBTC')).to.be.instanceOf(Market);
+  });
 });
 
 describe('start WS', () => {
@@ -25,7 +28,7 @@ describe('start WS', () => {
       expect(data[0]).to.haveOwnProperty('bestBidQuantity');
       expect(data[0]).to.haveOwnProperty('bestAskPrice');
       expect(data[0]).to.haveOwnProperty('bestAskQuantity');
-      exchange.ws.close();
+      exchange.websocket.close();
       done();
     });
   }).timeout(15000);

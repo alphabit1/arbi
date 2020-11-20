@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
+import Market from '../../src/Market';
 import Path from '../../src/Path';
 
 describe('Path ', () => {
@@ -9,25 +10,45 @@ describe('Path ', () => {
     expect(path).to.be.instanceOf(Path);
   });
 
-  it('should add a pair', () => {
-    let result = path.addPair({
-      symbol: 'XTCBTC',
-      status: 'TRADING',
-      baseAsset: 'XTC',
-      quoteAsset: 'BTC'
-    });
-    expect(path.pairs).to.be.lengthOf(1);
+  it('should add a market', () => {
+    let result = path.addMarket(
+      new Market(
+        {
+          symbol: 'XTCBTC',
+          status: 'TRADING',
+          baseAsset: 'XTC',
+          quoteAsset: 'BTC'
+        },
+        {
+          bidPrice: 1,
+          bidQty: 1,
+          askPrice: 1,
+          askQty: 1
+        }
+      )
+    );
+    expect(path.markets).to.be.lengthOf(1);
     expect(result).to.be.instanceOf(Path);
   });
 
   it('should return path string', () => {
     let str = path
-      .addPair({
-        symbol: 'LTCBTC',
-        status: 'TRADING',
-        baseAsset: 'XTC',
-        quoteAsset: 'BTC'
-      })
+      .addMarket(
+        new Market(
+          {
+            symbol: 'LTCBTC',
+            status: 'TRADING',
+            baseAsset: 'XTC',
+            quoteAsset: 'BTC'
+          },
+          {
+            bidPrice: 1,
+            bidQty: 1,
+            askPrice: 1,
+            askQty: 1
+          }
+        )
+      )
       .toString();
     expect(str).to.equal('XTCBTC LTCBTC');
   });

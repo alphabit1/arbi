@@ -1,43 +1,44 @@
 import { runInThisContext } from 'vm';
-import { Pair } from './Exchange';
+import Market from './Market';
 import Path from './Path';
 
 export default class PathFinder {
-  pairs: Pair[];
+  markets: Market[];
   quint: boolean;
   paths: Map<string, { trio: Path[]; quad: Path[]; quint: Path[] }> = new Map();
 
-  constructor(pairs: Pair[], coins: string[], quint = true) {
-    this.pairs = pairs;
+  constructor(markets: Map<string, Market>, coins: string[], quint = true) {
+    this.markets = Array.from(markets, (market: any) => market[1]);
     this.quint = quint;
     this._findAll(coins);
   }
 
-  _endPairs = (coin: string, otherCoin: string) => {
-    return this.pairs.filter((pair: Pair) => {
+  _endMarkets = (coin: string, otherCoin: string): Market[] => {
+    return this.markets.filter((market: Market) => {
       return (
-        (coin == pair.baseAsset && otherCoin == pair.quoteAsset) ||
-        (coin == pair.quoteAsset && otherCoin == pair.baseAsset)
+        (coin == market.baseAsset && otherCoin == market.quoteAsset) ||
+        (coin == market.quoteAsset && otherCoin == market.baseAsset)
       );
     });
   };
 
-  _coinPairs = (coin: string) => {
-    return this.pairs.filter((pair: Pair) => {
-      return coin == pair.baseAsset || coin == pair.quoteAsset;
+  _coinMarkets = (coin: string): Market[] => {
+    return this.markets.filter((market: Market) => {
+      return coin == market.baseAsset || coin == market.quoteAsset;
     });
   };
 
-  _findTrio = (coin: string) => {
+  _findTrio = (coin: string): Path[] => {
     let paths: Path[] = [];
-    this._coinPairs(coin).forEach((startPair: Pair) => {
-      let nextCoin = startPair.baseAsset == coin ? startPair.quoteAsset : startPair.baseAsset;
-      this._coinPairs(nextCoin).forEach((trioPair: Pair) => {
-        let trioCoin = trioPair.baseAsset == nextCoin ? trioPair.quoteAsset : trioPair.baseAsset;
-        this._endPairs(coin, trioCoin).forEach((endPair: Pair) => {
-          if (startPair == trioPair || trioPair == endPair) return;
+    this._coinMarkets(coin).forEach((startMarket: Market) => {
+      let nextCoin = startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
+      this._coinMarkets(nextCoin).forEach((trioMarket: Market) => {
+        let trioCoin =
+          trioMarket.baseAsset == nextCoin ? trioMarket.quoteAsset : trioMarket.baseAsset;
+        this._endMarkets(coin, trioCoin).forEach((endMarket: Market) => {
+          if (startMarket == trioMarket || trioMarket == endMarket) return;
           const path = new Path(coin);
-          path.addPair(startPair).addPair(trioPair).addPair(endPair);
+          path.addMarket(startMarket).addMarket(trioMarket).addMarket(endMarket);
           paths.push(path);
         });
       });
@@ -45,18 +46,25 @@ export default class PathFinder {
     return paths;
   };
 
-  _findQuad = (coin: string) => {
+  _findQuad = (coin: string): Path[] => {
     let paths: Path[] = [];
-    this._coinPairs(coin).forEach((startPair: Pair) => {
-      let nextCoin = startPair.baseAsset == coin ? startPair.quoteAsset : startPair.baseAsset;
-      this._coinPairs(nextCoin).forEach((trioPair: Pair) => {
-        let trioCoin = trioPair.baseAsset == nextCoin ? trioPair.quoteAsset : trioPair.baseAsset;
-        this._coinPairs(trioCoin).forEach((quadPair: Pair) => {
-          let quadCoin = quadPair.baseAsset == trioCoin ? quadPair.quoteAsset : quadPair.baseAsset;
-          this._endPairs(coin, quadCoin).forEach((endPair: Pair) => {
-            if (startPair == trioPair || trioPair == quadPair || quadPair == endPair) return;
+    this._coinMarkets(coin).forEach((startMarket: Market) => {
+      let nextCoin = startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
+      this._coinMarkets(nextCoin).forEach((trioMarket: Market) => {
+        let trioCoin =
+          trioMarket.baseAsset == nextCoin ? trioMarket.quoteAsset : trioMarket.baseAsset;
+        this._coinMarkets(trioCoin).forEach((quadMarket: Market) => {
+          let quadCoin =
+            quadMarket.baseAsset == trioCoin ? quadMarket.quoteAsset : quadMarket.baseAsset;
+          this._endMarkets(coin, quadCoin).forEach((endMarket: Market) => {
+            if (startMarket == trioMarket || trioMarket == quadMarket || quadMarket == endMarket)
+              return;
             const path = new Path(coin);
-            path.addPair(startPair).addPair(trioPair).addPair(quadPair).addPair(endPair);
+            path
+              .addMarket(startMarket)
+              .addMarket(trioMarket)
+              .addMarket(quadMarket)
+              .addMarket(endMarket);
             paths.push(path);
           });
         });
@@ -65,34 +73,36 @@ export default class PathFinder {
     return paths;
   };
 
-  _findQuint = (coin: string) => {
+  _findQuint = (coin: string): Path[] => {
     if (!this.quint) return [];
     let paths: Path[] = [];
-    this._coinPairs(coin).forEach((startPair: Pair) => {
-      let nextCoin = startPair.baseAsset == coin ? startPair.quoteAsset : startPair.baseAsset;
-      this._coinPairs(nextCoin).forEach((trioPair: Pair) => {
-        let trioCoin = trioPair.baseAsset == nextCoin ? trioPair.quoteAsset : trioPair.baseAsset;
-        this._coinPairs(trioCoin).forEach((quadPair: Pair) => {
-          let quadCoin = quadPair.baseAsset == trioCoin ? quadPair.quoteAsset : quadPair.baseAsset;
-          this._coinPairs(quadCoin).forEach((quintPair: Pair) => {
+    this._coinMarkets(coin).forEach((startMarket: Market) => {
+      let nextCoin = startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
+      this._coinMarkets(nextCoin).forEach((trioMarket: Market) => {
+        let trioCoin =
+          trioMarket.baseAsset == nextCoin ? trioMarket.quoteAsset : trioMarket.baseAsset;
+        this._coinMarkets(trioCoin).forEach((quadMarket: Market) => {
+          let quadCoin =
+            quadMarket.baseAsset == trioCoin ? quadMarket.quoteAsset : quadMarket.baseAsset;
+          this._coinMarkets(quadCoin).forEach((quintMarket: Market) => {
             let quintCoin =
-              quintPair.baseAsset == quadCoin ? quintPair.quoteAsset : quintPair.baseAsset;
+              quintMarket.baseAsset == quadCoin ? quintMarket.quoteAsset : quintMarket.baseAsset;
 
-            this._endPairs(coin, quintCoin).forEach((endPair: Pair) => {
+            this._endMarkets(coin, quintCoin).forEach((endMarket: Market) => {
               if (
-                startPair == trioPair ||
-                trioPair == quadPair ||
-                quadPair == quintPair ||
-                quintPair == endPair
+                startMarket == trioMarket ||
+                trioMarket == quadMarket ||
+                quadMarket == quintMarket ||
+                quintMarket == endMarket
               )
                 return;
               const path = new Path(coin);
               path
-                .addPair(startPair)
-                .addPair(trioPair)
-                .addPair(quadPair)
-                .addPair(quintPair)
-                .addPair(endPair);
+                .addMarket(startMarket)
+                .addMarket(trioMarket)
+                .addMarket(quadMarket)
+                .addMarket(quintMarket)
+                .addMarket(endMarket);
               paths.push(path);
             });
           });
@@ -102,7 +112,7 @@ export default class PathFinder {
     return paths;
   };
 
-  _findAll = (coins: string[]) => {
+  _findAll = (coins: string[]): void => {
     coins.forEach((coin: string) => {
       this.paths.set(coin, {
         trio: this._findTrio(coin),
@@ -112,7 +122,7 @@ export default class PathFinder {
     });
   };
 
-  getByCoin = (coin: string) => {
+  getByCoin = (coin: string): Path[] => {
     const all = this.paths.get(coin);
     if (all != undefined) {
       return all.trio.concat(all.quad);
@@ -120,7 +130,7 @@ export default class PathFinder {
     return [];
   };
 
-  getByCoinTrio = (coin: string) => {
+  getByCoinTrio = (coin: string): Path[] => {
     const all = this.paths.get(coin);
     if (all != undefined) {
       return all.trio;
@@ -128,7 +138,7 @@ export default class PathFinder {
     return [];
   };
 
-  getByCoinQuad = (coin: string) => {
+  getByCoinQuad = (coin: string): Path[] => {
     const all = this.paths.get(coin);
     if (all != undefined) {
       return all.quad;
@@ -136,7 +146,7 @@ export default class PathFinder {
     return [];
   };
 
-  getByCoinQuint = (coin: string) => {
+  getByCoinQuint = (coin: string): Path[] => {
     const all = this.paths.get(coin);
     if (all != undefined) {
       return all.quint;
@@ -144,7 +154,7 @@ export default class PathFinder {
     return [];
   };
 
-  getAll = () => {
+  getAll = (): Path[] => {
     let result: Path[] = [];
     this.paths.forEach((paths: { trio: Path[]; quad: Path[]; quint: Path[] }) => {
       const all = paths.trio.concat(paths.quad).concat(paths.quint);
@@ -153,21 +163,21 @@ export default class PathFinder {
     return result;
   };
 
-  getAllTrio = () => {
+  getAllTrio = (): Path[] => {
     let result: Path[] = [];
     this.paths.forEach((paths: { trio: Path[]; quad: Path[]; quint: Path[] }) => {
       result = result.concat(paths.trio);
     });
     return result;
   };
-  getAllQuad = () => {
+  getAllQuad = (): Path[] => {
     let result: Path[] = [];
     this.paths.forEach((paths: { trio: Path[]; quad: Path[]; quint: Path[] }) => {
       result = result.concat(paths.quad);
     });
     return result;
   };
-  getAllQuint = () => {
+  getAllQuint = (): Path[] => {
     let result: Path[] = [];
     this.paths.forEach((paths: { trio: Path[]; quad: Path[]; quint: Path[] }) => {
       result = result.concat(paths.quint);
