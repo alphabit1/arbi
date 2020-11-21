@@ -1,5 +1,3 @@
-import BidAsk from './BidAsk';
-
 export default class Market {
   symbol: string;
   status: string;
@@ -23,19 +21,27 @@ export default class Market {
   }
 
   update = (ticker: any) => {
-    this.bid = ticker.bestBid;
-    this.ask = ticker.bestAskPrice;
-    this.bidQuantity = ticker.bestBidQuantity;
-    this.askQuantity = ticker.bestAskQuantity;
+    if (
+      this.bid != ticker.bestBid ||
+      this.ask != ticker.bestAskPrice ||
+      this.bidQuantity != ticker.bestBidQuantity ||
+      this.askQuantity != ticker.bestAskQuantity
+    ) {
+      this.bid = ticker.bestBid;
+      this.ask = ticker.bestAskPrice;
+      this.bidQuantity = ticker.bestBidQuantity;
+      this.askQuantity = ticker.bestAskQuantity;
+      this._callListeners();
+    }
   };
 
   addListener = (listener: any) => {
     this.listeners.push(listener);
   };
 
-  setBidAsk = (bidAsk: BidAsk) => {
-    this.listeners.forEach(listener => {
-      listener.update(bidAsk);
+  _callListeners = () => {
+    this.listeners.forEach((listener: any) => {
+      listener();
     });
   };
 }

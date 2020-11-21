@@ -4,6 +4,7 @@
   "main": "index.js",
   "author": "alphabit1",
   "license": "MIT",
+  "type":"commonjs",
   "description": "Basic boilerplate for Node.js development with TypeScript, ESLint, Prettier, Airbnb styleguide, Mocha, Chai, supertest, istanbul, pino, tsc-watch",
   "repository": "https://github.com/alphabit1/nodejs-typescript-eslint-prettier-mocha-chai-istanbul-boilerplate",
   "scripts": {

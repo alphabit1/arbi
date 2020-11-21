@@ -1,5 +1,11 @@
-import BidAsk from './BidAsk';
 import Market from './Market';
+
+interface Action {
+  symbol: string;
+  price: number;
+  size: number;
+  type: string;
+}
 
 export default class Path {
   coin: string;
@@ -17,36 +23,41 @@ export default class Path {
     return this.markets.some((market: Market) => market.symbol == symbol);
   };
 
-  calculate = (fee: number, bidAsk: Map<string, BidAsk>) => {
+  calculate = (fee: number) => {
     let type: string = '';
     let price: number = 0;
     let start: number = 1;
     let coins: number = start;
     let current: string = this.coin;
     let str = '';
+    let actions: Action[] = [];
     this.markets.forEach((market: Market) => {
-      let marketBidAsk = bidAsk.get(market.symbol);
-      if (marketBidAsk == undefined) {
-        coins = 0;
-        return;
-      }
       if (current == market.baseAsset) {
         type = 'sell';
-        price = marketBidAsk.bid;
+        price = market.bid;
         coins = coins * price;
         current = market.quoteAsset;
       } else {
         type = 'buy';
-        price = marketBidAsk.ask;
+        price = market.ask;
         coins = coins / price;
         current = market.baseAsset;
       }
+      let action: Action = {
+        symbol: market.symbol,
+        type,
+        price,
+        size: 0
+      };
+      actions.push(action);
+      let coinsPreFee = coins;
       coins -= (coins / 100) * fee;
-      str += `${type} ${market.symbol} @ ${price}\n`;
+      str += `${type} ${market.symbol} @ ${price} ${coinsPreFee} ${coins}\n`;
     });
     return {
-      score: Math.round(((coins - start) / start) * 100000) / 1000,
-      str: str.substring(0, str.length - 2)
+      score: Math.round(((coins - start) / start) * 1000000) / 10000,
+      str: str.substring(0, str.length - 1),
+      actions: actions
     };
   };
 

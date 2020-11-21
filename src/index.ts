@@ -1,23 +1,10 @@
 import Arbi from './Arbi';
 
-const arbi = new Arbi();
-arbi.start();
-
-// const bidAsk: Map<string, BidAsk> = new Map();
-// const startCoins = ['BNB'];
-// const exchange = new Exchange();
-// exchange.getAllPairs().then(pairs => {
-//   console.log(`${pairs.length} pairs`);
-
-//   console.log(`Finding paths for ${startCoins.join(', ')}...`);
-//   const finder = new PathFinder(pairs, startCoins, false);
-
-//   startCoins.forEach((coin: string) => {
-//     let trio = finder.getByCoinTrio(coin);
-//     let quad = finder.getByCoinQuad(coin);
-//     let quint = finder.getByCoinQuint(coin);
-//     console.log(`${coin} trio: ${trio.length} quad: ${quad.length} quint: ${quint.length}`);
-//   });
+(async () => {
+  let arbi = new Arbi(['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'], 0.075);
+  await arbi.init(true);
+  arbi.start();
+})();
 
 //   exchange.startWs((data: any) => {
 //     // console.time('outerloop');

@@ -9,12 +9,27 @@ describe('get all markets', () => {
     const result: Map<string, Market> = await exchange.getMarkets();
     expect(result.size).to.be.greaterThan(10);
     expect(result.get('LTCBTC')).to.be.instanceOf(Market);
-  }).timeout(15000);
+  }).timeout(150000);
   it('should return all DEV trading markets', async () => {
     const exchange = new Exchange();
     const result: Map<string, Market> = await exchange.getMarkets(true);
     expect(result.size).to.equal(5);
     expect(result.get('LTCBTC')).to.be.instanceOf(Market);
+  });
+});
+
+describe('get all symbols', () => {
+  it('should return all trading symbols', async () => {
+    const exchange = new Exchange();
+    const result: any[] = await exchange.getAllSymbols();
+    expect(result.length).to.be.greaterThan(10);
+    expect(result[0]).to.haveOwnProperty('symbol');
+  }).timeout(150000);
+  it('should return all DEV trading symbols', async () => {
+    const exchange = new Exchange();
+    const result: any[] = await exchange.getAllSymbols(true);
+    expect(result.length).to.equal(6);
+    expect(result[0]).to.haveOwnProperty('symbol');
   });
 });
 

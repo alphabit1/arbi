@@ -1,5 +1,4 @@
 import binance from 'binance';
-import BidAsk from './BidAsk';
 import Market from './Market';
 
 const pairs = [
