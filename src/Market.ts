@@ -42,29 +42,16 @@ export default class Market {
     }
   };
 
-  addListener = (listener: any) => {
-    this.listeners.push(listener);
+  isUpdated = (market: Market | undefined) => {
+    if (market == undefined) return false;
+    return (
+      this.bid != market.bid ||
+      this.ask != market.ask ||
+      this.bidQuantity != market.bidQuantity ||
+      this.askQuantity != market.askQuantity
+    );
   };
-
-  spawnThread = async () => {
-    // this.thread = await spawn<Caller>(new Worker('./workers/caller'));
-  };
-
-  _callListeners = () => {
-    if (this.updated) {
-      this.updated = false;
-      // this.thread?.go(this.listeners, 'aaa');
-      this.listeners.forEach((listener: any) => {
-        listener();
-      });
-    }
-
-    // if (this.listeners.length > 40000) console.log(this.listeners.length);
-    // console.time('caller');
-    // console.time(this.symbol + ' listener loop');
-
-    // console.timeEnd(this.symbol + ' listener loop');
-    // console.timeEnd('caller');
-    // if (this.listeners.length > 40000) console.timeEnd('caller');
+  hash = () => {
+    return `${this.symbol} ${this.bid} ${this.bidQuantity} ${this.ask} ${this.askQuantity}`;
   };
 }

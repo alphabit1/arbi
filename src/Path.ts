@@ -10,10 +10,19 @@ interface Action {
 export default class Path {
   coin: string;
   markets: Market[] = [];
+  startCoins = 1;
 
   constructor(coin: string) {
     this.coin = coin;
   }
+  hash = () => {
+    let newHash = '';
+    this.markets.forEach((market: Market) => {
+      newHash += market.hash();
+    });
+    return newHash;
+  };
+
   addMarket = (market: Market) => {
     this.markets.push(market);
     return this;
@@ -24,16 +33,12 @@ export default class Path {
   };
 
   calculate = (fee: number) => {
-    let type: string = '';
-    let price: number = 0;
-    let start: number = 1;
-    let coins: number = start;
+    let type: string = 'sell';
+    let coins: number = this.startCoins;
     let current: string = this.coin;
-    let str = '';
-    let actions: Action[] = [];
+    let price = 0;
     this.markets.forEach((market: Market) => {
       if (current == market.baseAsset) {
-        type = 'sell';
         price = market.bid;
         coins = coins * price;
         current = market.quoteAsset;
@@ -43,22 +48,9 @@ export default class Path {
         coins = coins / price;
         current = market.baseAsset;
       }
-      let action: Action = {
-        symbol: market.symbol,
-        type,
-        price,
-        size: 0
-      };
-      actions.push(action);
-      let coinsPreFee = coins;
       coins -= (coins / 100) * fee;
-      str += `${type} ${market.symbol} @ ${price} ${coinsPreFee} ${coins}\n`;
     });
-    return {
-      score: Math.round(((coins - start) / start) * 1000000) / 10000,
-      str: str.substring(0, str.length - 1),
-      actions: actions
-    };
+    return Math.round(((coins - this.startCoins) / this.startCoins) * 1000000) / 10000;
   };
 
   toString = () => {

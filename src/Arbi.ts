@@ -13,6 +13,8 @@ export default class Arbi {
   balance = 1;
   perc = 0;
   tp: Map<string, Path[]> = new Map();
+  usedPaths: string[] = [];
+  hashes: string[] = [];
 
   constructor(baseCoins: string[], fee: number) {
     this.baseCoins = baseCoins;
@@ -34,31 +36,6 @@ export default class Arbi {
       this.paths = this.paths.concat(trio, quad, quint);
       console.log(`trio: ${trio.length} quad: ${quad.length} quint: ${quint.length}`);
     });
-
-    // for every Path add a listener to every Market it traverses
-    this.paths.forEach((path: Path) => {
-      path.markets.forEach((market: Market) => {
-        const marketWithListener = this.markets.get(market.symbol);
-        if (marketWithListener == undefined) return;
-        marketWithListener.addListener(() => {
-          let calc = path.calculate(this.fee);
-          if (calc.score > 0.1) {
-            this.arbs.push(path);
-            // console.log(calc.str);
-            // console.log(calc.score);
-            this.perc += calc.score;
-            // console.log();
-          }
-        });
-        this.markets.set(market.symbol, marketWithListener);
-      });
-    });
-    let tempMarkets: Map<string, Market> = new Map();
-    this.markets.forEach((market: Market) => {
-      market.spawnThread();
-      tempMarkets.set(market.symbol, market);
-    });
-    this.markets = tempMarkets;
     console.log(`${this.paths.length} paths`);
     console.log();
   };
@@ -67,26 +44,37 @@ export default class Arbi {
     // connect to ws for book ticker updates
     this.exchange.startWs((tickers: any) => {
       let start = new Date().getTime();
-      // console.time(`${this.baseCoins[0]} loop`);
       tickers.forEach((ticker: any) => {
         this.markets.get(ticker.symbol)?.update(ticker);
       });
-      tickers.forEach((ticker: any) => {
-        this.markets.get(ticker.symbol)?._callListeners();
+
+      this.paths.forEach(p => {
+        // if (p.markets[0].symbol == 'LTCUSDT') console.log(p.markets[0].updated);
+        if (p.markets.some(market => market.updated)) {
+          let score = p.calculate(this.fee);
+          if (score > 0.1) {
+            this.arbs.push(p);
+            this.perc += score;
+            this.usedPaths.push(p.toString());
+            this.hashes.push(p.hash());
+          }
+        }
       });
 
+      this.markets.forEach((market: Market) => {
+        market.updated = false;
+      });
+      let unique = [...new Set(this.usedPaths)];
+      let unique1 = [...new Set(this.hashes)];
       console.log(
-        `${this.baseCoins[0]} arbs: ${this.arbs.length} total: ${
-          Math.round(this.perc * 100) / 100
-        }%`
+        `${this.baseCoins[0]} hashes: ${unique1.length} paths: ${unique.length} arbs: ${
+          this.arbs.length
+        } profit: ${Math.round(this.perc * 100) / 100}%`
       );
       let time = (new Date().getTime() - start) / 1000;
-      if (time > 2) {
+      if (time > 1) {
         console.log(`>>>> ${this.baseCoins[0]} ${time}s`);
       }
-
-      // console.timeEnd(`${this.baseCoins[0]} loop`);
-      // console.log();
     });
   };
 
