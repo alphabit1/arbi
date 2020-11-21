@@ -40,8 +40,14 @@ export default class Market {
   };
 
   _callListeners = () => {
+    // if (this.listeners.length > 40000) console.log(this.listeners.length);
+    // console.time('caller');
+    // console.time(this.symbol + ' listener loop');
     this.listeners.forEach((listener: any) => {
       listener();
     });
+    // console.timeEnd(this.symbol + ' listener loop');
+    // console.timeEnd('caller');
+    // if (this.listeners.length > 40000) console.timeEnd('caller');
   };
 }

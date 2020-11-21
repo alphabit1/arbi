@@ -1,9 +1,11 @@
-import Arbi from './Arbi';
+import { spawn, Thread, Worker } from 'threads';
+import { ArbiStarter } from './workers/arbiStarter';
 
 (async () => {
-  let arbi = new Arbi(['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'], 0.075);
-  await arbi.init(true);
-  arbi.start();
+  const btcStarter: ArbiStarter = await spawn<ArbiStarter>(new Worker('./workers/arbiStarter'));
+  // const bnbStarter: ArbiStarter = await spawn<ArbiStarter>(new Worker('./workers/arbiStarter'));
+  btcStarter.start(['BNB'], 0.075, true);
+  // bnbStarter.start('BNB', 0.075, false);
 })();
 
 //   exchange.startWs((data: any) => {
