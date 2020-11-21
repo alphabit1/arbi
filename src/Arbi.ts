@@ -12,6 +12,7 @@ export default class Arbi {
   arbs: Path[] = [];
   balance = 1;
   perc = 0;
+  tp: Map<string, Path[]> = new Map();
 
   constructor(baseCoins: string[], fee: number) {
     this.baseCoins = baseCoins;
@@ -52,6 +53,12 @@ export default class Arbi {
         this.markets.set(market.symbol, marketWithListener);
       });
     });
+    let tempMarkets: Map<string, Market> = new Map();
+    this.markets.forEach((market: Market) => {
+      market.spawnThread();
+      tempMarkets.set(market.symbol, market);
+    });
+    this.markets = tempMarkets;
     console.log(`${this.paths.length} paths`);
     console.log();
   };
@@ -59,17 +66,27 @@ export default class Arbi {
   start = () => {
     // connect to ws for book ticker updates
     this.exchange.startWs((tickers: any) => {
-      console.log(this.baseCoins[0]);
-      console.log(`arbs: ${this.arbs.length} total: ${Math.round(this.perc * 100) / 100}%`);
-      console.time('loop');
+      let start = new Date().getTime();
+      // console.time(`${this.baseCoins[0]} loop`);
       tickers.forEach((ticker: any) => {
-        // console.time('update ' + ticker.symbol);
         this.markets.get(ticker.symbol)?.update(ticker);
-        // this.markets.get(ticker.symbol)?.symbol;
-        // console.timeEnd('update ' + ticker.symbol);
       });
-      console.timeEnd('loop');
-      console.log();
+      tickers.forEach((ticker: any) => {
+        this.markets.get(ticker.symbol)?._callListeners();
+      });
+
+      console.log(
+        `${this.baseCoins[0]} arbs: ${this.arbs.length} total: ${
+          Math.round(this.perc * 100) / 100
+        }%`
+      );
+      let time = (new Date().getTime() - start) / 1000;
+      if (time > 2) {
+        console.log(`>>>> ${this.baseCoins[0]} ${time}s`);
+      }
+
+      // console.timeEnd(`${this.baseCoins[0]} loop`);
+      // console.log();
     });
   };
 

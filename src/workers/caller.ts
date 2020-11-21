@@ -1,8 +1,11 @@
 import { expose } from 'threads/worker';
 
 const caller = {
-  call(listeners: any[]) {
+  go(listeners: any[], str: string) {
+    console.log(str + ' ' + listeners.length);
     listeners.forEach((listener: any) => {
+      console.log('hkfkjhgb');
+
       listener();
     });
   }
