@@ -35,14 +35,12 @@ export default class Arbi {
     });
     console.log(`${this.paths.length} paths`);
 
-    // let count = 0;
     // for every Path add a listener to every Market it traverses
     this.paths.forEach((path: Path) => {
       path.markets.forEach((market: Market) => {
         const marketWithListener = this.markets.get(market.symbol);
         if (marketWithListener == undefined) return;
         marketWithListener.addListener(() => {
-          // count++;
           let calc = path.calculate(this.fee);
           if (calc.score > 0.1) {
             this.arbs.push(path);
@@ -52,7 +50,6 @@ export default class Arbi {
             console.log(`arbs: ${this.arbs.length} total: ${Math.round(this.perc * 100) / 100}%`);
             console.log();
           }
-          // console.log(`${count} updated ${path.toString()} ${path.calculate(this.fee).score}`);
         });
         this.markets.set(market.symbol, marketWithListener);
       });
@@ -64,8 +61,6 @@ export default class Arbi {
       tickers.forEach((ticker: any) => {
         this.markets.get(ticker.symbol)?.update(ticker);
       });
-      // console.log(count);
-      // count = 0;
     });
   };
 
