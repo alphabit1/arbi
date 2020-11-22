@@ -20,10 +20,6 @@ export default class Path {
     return this;
   };
 
-  // hasSymbol = (symbol: string) => {
-  //   return this.markets.some((market: Market) => market.symbol == symbol);
-  // };
-
   calculate = (): { score: number; actions: Action[] } => {
     let type = 'sell';
     let coins: number = this.startCoins;
@@ -45,16 +41,8 @@ export default class Path {
       coins -= (coins / 100) * this.fee;
     });
     return {
-      score: Math.round(((coins - this.startCoins) / this.startCoins) * 1000000) / 10000,
+      score: ((coins - this.startCoins) / this.startCoins) * 100,
       actions
     };
   };
-
-  // toString = () => {
-  //   let str = '';
-  //   this.markets.forEach((market: Market) => {
-  //     str += `${market.symbol} `;
-  //   });
-  //   return str.substr(0, str.length - 1);
-  // };
 }

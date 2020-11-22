@@ -14,6 +14,6 @@ const baseCoins: string[] = [
   'XRP'
 ];
 (async () => {
-  const arbi = new Arbi(['BTC', 'LTC'], fee, true, true, false);
+  const arbi = new Arbi(baseCoins, fee, true, false, false);
   arbi.start();
 })();

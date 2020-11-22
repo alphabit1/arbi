@@ -18,7 +18,14 @@ const arbiWorker = {
     subject.complete();
     subject = new Subject();
   },
-  async start(coin: string, fee: number, triangle: boolean, square: boolean, penta: boolean) {
+  async start(
+    coin: string,
+    fee: number,
+    threshold: number,
+    triangle: boolean,
+    square: boolean,
+    penta: boolean
+  ) {
     const markets = await exchange.getMarkets();
     next(coin, 1, markets.size);
 
@@ -43,12 +50,13 @@ const arbiWorker = {
 
       paths.forEach(path => {
         const calc = path.calculate();
-        if (calc.score > 0.01) {
-          next(coin, 666, { score: calc.score, actions: calc.score });
+        if (calc.score > threshold) {
+          next(coin, 666, { score: calc.score, actions: calc.actions });
         }
       });
 
-      const time = (new Date().getTime() - start) / 1000;
+      let time = (new Date().getTime() - start) / 1000;
+      if (time === 0) time = 0.001;
       next(coin, 3, time);
     });
   },

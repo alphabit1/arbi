@@ -6,11 +6,14 @@ import Path from './Path';
 import PathFinder from './PathFinder';
 import Action from './Action';
 import Arb from './Arb';
-
+import Spinnies from 'spinnies';
 export default class Arbi {
   baseCoins: string[] = ['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'];
 
   fee = 0.075;
+  perc = 0;
+  threshold = 1;
+  score = 0;
 
   penta: boolean;
 
@@ -22,7 +25,15 @@ export default class Arbi {
 
   arbs: Arb[] = [];
 
-  results: Map<string, { score: number; arbs: number }> = new Map();
+  results: Map<
+    string,
+    {
+      score: number;
+      arbs: number;
+      markets: number;
+      paths: number;
+    }
+  > = new Map();
 
   arbTypes: Map<number, string> = new Map([
     [23, 'triangle'],
@@ -39,54 +50,108 @@ export default class Arbi {
   }
 
   start = async () => {
+    const totalTime = new Date().getTime();
+    const spinnies = new Spinnies();
+
     for (let i = 0; i < this.baseCoins.length; i++) {
       const startCoin: string = this.baseCoins[i];
-      // find all arb paths
-      // console.log(`Finding arb paths for: ${coin}`);
-
+      spinnies.add(startCoin, { text: startCoin });
+    }
+    spinnies.add('last', { text: 'last', spinner: ['-'] });
+    for (let i = 0; i < this.baseCoins.length; i++) {
+      const startCoin: string = this.baseCoins[i];
       try {
         // eslint-disable-next-line no-await-in-loop
         const arbiWorker = await spawn(new Worker('./workers/arbiWorker'));
-        arbiWorker.start(startCoin, this.fee, this.triangle, this.square, this.penta);
+        arbiWorker.start(
+          startCoin,
+          this.threshold,
+          this.fee,
+          this.triangle,
+          this.square,
+          this.penta
+        );
         arbiWorker.values().subscribe(({ coin, code, data }) => {
+          let res = this.results.get(coin);
+          if (res == undefined) {
+            res = { score: 0, arbs: 0, markets: 0, paths: 0 };
+          }
           switch (code) {
             case 1:
-              console.log(`${coin} active markets: ${data}`);
+              res.markets = data;
+              this.results.set(coin, res);
+              spinnies.update(coin, { text: `${coin} active markets: ${data}` });
               break;
             case 23:
+              res.paths += data;
+              this.results.set(coin, res);
+              spinnies.update(coin, { text: `${coin} triangle arbs: ${data}` });
+              break;
             case 24:
+              res.paths += data;
+              this.results.set(coin, res);
+              spinnies.update(coin, { text: `${coin} square arbs: ${data}` });
+              break;
             case 25:
-              console.log(`${coin} ${this.arbTypes.get(code)} arbs: ${data}`);
+              res.paths += data;
+              this.results.set(coin, res);
+              spinnies.update(coin, { text: `${coin} penta arbs: ${data}` });
               break;
             case 3:
-              console.log(`${coin} updated: ${data}s`);
+              let txt = `${coin} `;
+              if (coin.length == 3) {
+                txt += ' ';
+              }
+              txt += `${data}s paths: ${res.paths}`;
+              let fill = 35 - txt.length;
+              for (let i = 0; i < fill; i++) {
+                txt += ' ';
+              }
+              txt += `arbs: ${res.arbs}`;
+              fill = 60 - txt.length;
+              for (let i = 0; i < fill; i++) {
+                txt += ' ';
+              }
+              spinnies.update(coin, {
+                text: `${txt}  perc: ${Math.round(res.score * 100) / 100}  `
+              });
               break;
             case 666:
               const arb = new Arb(coin, data.score, data.actions);
-              // TODO purely for dev purposes when not executing the trade to not skew results by counting the same arb multiple times
+              // TODO: purely for dev purposes when not executing the trade to not skew results by counting the same arb multiple times
               let skip = false;
               const same = this.arbs.filter((arbOld: Arb) => arb.hash() === arbOld.hash());
               same.forEach((sameArb: Arb) => {
                 if (
                   arb.timestamp - sameArb.timestamp < 100000 &&
-                  Math.abs(sameArb.score - arb.score) < 0.01
+                  Math.abs(sameArb.score - arb.score) < 0.1
                 ) {
-                  console.log(`${coin} ${arb.hash()} SAME`);
                   skip = true;
                 }
               });
+              let time = new Date().getTime() - totalTime;
               if (!skip) {
                 this.arbs.push(arb);
-                let res = this.results.get(coin);
-                if (res == undefined) {
-                  res = { score: 0, arbs: 0 };
-                }
                 res.score += arb.score;
+                this.score += arb.score;
                 res.arbs++;
                 this.results.set(coin, res);
-              }
 
-              console.log(arb.toString());
+                spinnies.succeed('last', {
+                  text: `${Math.round(time / 10 / 60) / 100}min - ${this.arbs.length} - ${
+                    this.score
+                  }\n${arb.toStringFull()}`
+                });
+              } else {
+                spinnies.fail('last', {
+                  text: `${Math.round(time / 10 / 60) / 100}min - ${this.arbs.length} - ${
+                    this.score
+                  }\n${arb.toStringFull()}`
+                });
+              }
+              break;
+            case 3:
+              console.log();
               break;
             default:
               break;
@@ -100,6 +165,6 @@ export default class Arbi {
   };
 
   stop = (coin: string) => {
-    // this.exchange.websocket.close();
+    this.coinWorkers.get(coin)?.finish();
   };
 }

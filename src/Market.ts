@@ -1,5 +1,4 @@
 import { spawn, Thread, Worker } from 'threads';
-import { Caller } from './workers/caller';
 
 // type Caller = (listeners: any[]) => Promise<void>;
 export default class Market {

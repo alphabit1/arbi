@@ -33,6 +33,6 @@ export default class Arb {
     this.actions.forEach((action: Action) => {
       result += `${action.type} ${action.symbol} ${action.size} @ ${action.price}\n`;
     });
-    return `${result} ${this.score}`;
+    return result + `${this.score}`;
   };
 }
