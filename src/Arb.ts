@@ -1,3 +1,4 @@
+import { allowedNodeEnvironmentFlags } from 'process';
 import Action from './Action';
 
 export default class Arb {
@@ -9,11 +10,14 @@ export default class Arb {
 
   timestamp: number;
 
-  constructor(coin: string, score: number, actions: Action[]) {
+  string: string;
+
+  constructor(coin: string, score: number, actions: Action[], string: string) {
     this.coin = coin;
     this.score = score;
     this.actions = actions;
     this.timestamp = new Date().getTime();
+    this.string = string;
   }
 
   hash = (): string => {
@@ -28,10 +32,24 @@ export default class Arb {
     return `${this.hash()}: ${this.score}%`;
   };
 
+  proof = () => {
+    let result = '';
+    this.actions.forEach((action: Action) => {
+      if (action.type == 'buy') {
+      }
+      result += `${action.type} ${action.symbol} ${action.size} ${action.base} @ ${action.price} = ${action.resultPreFee} ${action.quote}\n`;
+      // else
+      // result += `${action.type} ${action.symbol} ${action.size} ${action.quote} @ ${action.price} = ${action.resultPreFee} - ${action.result} ${action.base}\n`;
+    });
+  };
+
   toStringFull = (): string => {
     let result = '';
     this.actions.forEach((action: Action) => {
-      result += `${action.type} ${action.symbol} ${action.size} @ ${action.price}\n`;
+      if (action.type == 'sell')
+        result += `${action.type} ${action.symbol} ${action.size} ${action.base} @ ${action.price} = ${action.resultPreFee} ${action.quote}\n`;
+      else
+        result += `${action.type} ${action.symbol} ${action.resultPreFee} ${action.base} @ ${action.price} = ${action.size} ${action.quote}\n`;
     });
     return result + `${this.score}`;
   };

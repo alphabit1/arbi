@@ -85,6 +85,7 @@ class Exchange {
     const tickers: Map<string, any> = await this.getAllBookTickersMap();
     symbols.forEach(async (market: any) => {
       const ticker = tickers.get(market.symbol);
+
       if (ticker) markets.set(market.symbol, new Market(market, ticker));
     });
     return markets;

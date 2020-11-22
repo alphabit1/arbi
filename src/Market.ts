@@ -7,8 +7,15 @@ export default class Market {
   status: string;
 
   baseAsset: string;
+  baseAssetPrecision: number;
+  baseCommissionPrecision: number;
 
   quoteAsset: string;
+  quotePrecision: number;
+  quoteAssetPrecision: number;
+  quoteCommissionPrecision: number;
+
+  filters: any[];
 
   bid: number;
 
@@ -17,11 +24,29 @@ export default class Market {
   bidQuantity: number;
 
   askQuantity: number;
+  lotPrecision: number;
+  stepSize: number;
 
   constructor(market: any, ticker: any) {
     this.symbol = market.symbol;
     this.status = market.status;
     this.baseAsset = market.baseAsset;
+    this.baseAssetPrecision = market.baseAssetPrecision;
+    this.baseCommissionPrecision = market.baseCommissionPrecision;
+
+    this.quoteAsset = market.quoteAsset;
+    this.quotePrecision = market.quotePrecision;
+    this.quoteAssetPrecision = market.quoteAssetPrecision;
+    this.quoteCommissionPrecision = market.quoteCommissionPrecision;
+
+    this.filters = market.filters;
+
+    let lot_size = market.filters.filter((filter: any) => {
+      return filter.filterType == 'LOT_SIZE';
+    })[0];
+    let step_size = lot_size.stepSize;
+    this.lotPrecision = step_size.substr(2).indexOf('1') + 1;
+    this.stepSize = step_size;
     this.quoteAsset = market.quoteAsset;
     this.bid = ticker.bidPrice;
     this.ask = ticker.askPrice;

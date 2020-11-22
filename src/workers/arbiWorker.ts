@@ -20,6 +20,7 @@ const arbiWorker = {
   },
   async start(
     coin: string,
+    startAmount: number,
     fee: number,
     threshold: number,
     triangle: boolean,
@@ -49,9 +50,14 @@ const arbiWorker = {
       });
 
       paths.forEach(path => {
-        const calc = path.calculate();
+        const calc = path.calculate(startAmount);
         if (calc.score > threshold) {
-          next(coin, 666, { score: calc.score, actions: calc.actions });
+          next(coin, 666, {
+            score: calc.score,
+            actions: calc.actions,
+            startAmount,
+            string: calc.string
+          });
         }
       });
 
