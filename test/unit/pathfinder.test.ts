@@ -27,37 +27,37 @@ describe('pathfinder', function () {
     });
   });
 
-  describe('get all trio paths', () => {
-    it('should return all trio arb paths', async () => {
+  describe('get all triangle paths', () => {
+    it('should return all triangle arb paths', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getAllTrio();
+      const paths: Path[] = finder.getAllTriangle();
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(6);
       expect(paths[0]).to.haveOwnProperty('coin');
     });
   });
 
-  describe('get all quad paths', () => {
-    it('should return all quad arb paths', async () => {
+  describe('get all square paths', () => {
+    it('should return all square arb paths', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getAllQuad();
+      const paths: Path[] = finder.getAllSquare();
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(4);
       expect(paths[0]).to.haveOwnProperty('coin');
     });
   });
 
-  describe('get all quint paths', () => {
-    it('should return all quint arb paths', async () => {
+  describe('get all penta paths', () => {
+    it('should return all penta arb paths', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getAllQuint();
+      const paths: Path[] = finder.getAllPenta();
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(4);
       expect(paths[0]).to.haveOwnProperty('coin');
     });
-    it('should return empty array if quint == false', async () => {
+    it('should return empty array if penta == false', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC'], false);
-      const paths: Path[] = finder.getAllQuint();
+      const paths: Path[] = finder.getAllPenta();
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(0);
     });
@@ -80,10 +80,10 @@ describe('pathfinder', function () {
     });
   });
 
-  describe('get all trio paths for coin', () => {
-    it('should return all trio arb paths for coin', async () => {
+  describe('get all triangle paths for coin', () => {
+    it('should return all triangle arb paths for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinTrio('BTC');
+      const paths: Path[] = finder.getByCoinTriangle('BTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(4);
       expect(paths[0]).to.haveOwnProperty('coin');
@@ -91,16 +91,16 @@ describe('pathfinder', function () {
 
     it('should return empty array if no path for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinTrio('XTC');
+      const paths: Path[] = finder.getByCoinTriangle('XTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(0);
     });
   });
 
-  describe('get all quad paths for coin', () => {
-    it('should return all quad arb paths for coin', async () => {
+  describe('get all square paths for coin', () => {
+    it('should return all square arb paths for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinQuad('BTC');
+      const paths: Path[] = finder.getByCoinSquare('BTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(2);
       expect(paths[0]).to.haveOwnProperty('coin');
@@ -108,31 +108,31 @@ describe('pathfinder', function () {
 
     it('should return empty array if no path for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinQuad('XTC');
+      const paths: Path[] = finder.getByCoinSquare('XTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(0);
     });
   });
 
-  describe('get all quint paths for coin', () => {
-    it('should return all quint arb paths for coin', async () => {
+  describe('get all penta paths for coin', () => {
+    it('should return all penta arb paths for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinQuint('LTC');
+      const paths: Path[] = finder.getByCoinPenta('LTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(4);
       expect(paths[0]).to.haveOwnProperty('coin');
     });
 
-    it('should return empty array if quint == false', async () => {
+    it('should return empty array if penta == false', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC'], false);
-      const paths: Path[] = finder.getByCoinQuint('LTC');
+      const paths: Path[] = finder.getByCoinPenta('LTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(0);
     });
 
     it('should return empty array if no path for coin', async () => {
       const finder = new PathFinder(markets, ['BTC', 'LTC']);
-      const paths: Path[] = finder.getByCoinQuint('XTC');
+      const paths: Path[] = finder.getByCoinPenta('XTC');
       expect(paths).to.be.a('array');
       expect(paths).to.be.lengthOf(0);
     });

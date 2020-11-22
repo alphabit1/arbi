@@ -42,7 +42,9 @@ const pairs = [
 
 class Exchange {
   websocket: any = null;
+
   rest: any;
+
   ws: any;
 
   constructor() {

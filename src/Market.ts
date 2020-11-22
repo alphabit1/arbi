@@ -1,19 +1,23 @@
-import { Caller } from './workers/caller';
 import { spawn, Thread, Worker } from 'threads';
+import { Caller } from './workers/caller';
 
 // type Caller = (listeners: any[]) => Promise<void>;
 export default class Market {
   symbol: string;
+
   status: string;
+
   baseAsset: string;
+
   quoteAsset: string;
-  listeners: any[] = [];
+
   bid: number;
+
   ask: number;
+
   bidQuantity: number;
+
   askQuantity: number;
-  thread: Caller | undefined = undefined;
-  updated = false;
 
   constructor(market: any, ticker: any) {
     this.symbol = market.symbol;
@@ -26,32 +30,19 @@ export default class Market {
     this.askQuantity = ticker.askQty;
   }
 
-  update = (ticker: any) => {
+  update = (ticker: any): boolean => {
     if (
-      this.bid != ticker.bestBid ||
-      this.ask != ticker.bestAskPrice ||
-      this.bidQuantity != ticker.bestBidQuantity ||
-      this.askQuantity != ticker.bestAskQuantity
+      this.bid !== ticker.bestBid ||
+      this.ask !== ticker.bestAskPrice ||
+      this.bidQuantity !== ticker.bestBidQuantity ||
+      this.askQuantity !== ticker.bestAskQuantity
     ) {
-      this.updated = true;
       this.bid = ticker.bestBid;
       this.ask = ticker.bestAskPrice;
       this.bidQuantity = ticker.bestBidQuantity;
       this.askQuantity = ticker.bestAskQuantity;
-      // this._callListeners();
+      return true;
     }
-  };
-
-  isUpdated = (market: Market | undefined) => {
-    if (market == undefined) return false;
-    return (
-      this.bid != market.bid ||
-      this.ask != market.ask ||
-      this.bidQuantity != market.bidQuantity ||
-      this.askQuantity != market.askQuantity
-    );
-  };
-  hash = () => {
-    return `${this.symbol} ${this.bid} ${this.bidQuantity} ${this.ask} ${this.askQuantity}`;
+    return false;
   };
 }

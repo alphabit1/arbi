@@ -1,84 +1,105 @@
+import { Observable, Subject } from 'threads/observable';
+import { spawn, Thread, Worker } from 'threads';
 import Exchange from './Exchange';
 import Market from './Market';
 import Path from './Path';
 import PathFinder from './PathFinder';
+import Action from './Action';
+import Arb from './Arb';
 
 export default class Arbi {
-  exchange: Exchange = new Exchange();
-  markets: Map<string, Market> = new Map();
   baseCoins: string[] = ['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'];
-  paths: Path[] = [];
-  fee = 0.075;
-  arbs: Path[] = [];
-  balance = 1;
-  perc = 0;
-  tp: Map<string, Path[]> = new Map();
-  usedPaths: string[] = [];
-  hashes: string[] = [];
 
-  constructor(baseCoins: string[], fee: number) {
+  fee = 0.075;
+
+  penta: boolean;
+
+  square: boolean;
+
+  triangle: boolean;
+
+  coinWorkers: Map<string, any> = new Map();
+
+  arbs: Arb[] = [];
+
+  results: Map<string, { score: number; arbs: number }> = new Map();
+
+  arbTypes: Map<number, string> = new Map([
+    [23, 'triangle'],
+    [24, 'square'],
+    [25, 'penta']
+  ]);
+
+  constructor(baseCoins: string[], fee: number, triangle = true, square = true, penta = true) {
     this.baseCoins = baseCoins;
     this.fee = fee;
+    this.triangle = triangle;
+    this.square = square;
+    this.penta = penta;
   }
 
-  init = async (quint = true) => {
-    // get all active markets
-    this.markets = await this.exchange.getMarkets();
-    console.log(`${this.markets.size} active markets`);
+  start = async () => {
+    for (let i = 0; i < this.baseCoins.length; i++) {
+      const startCoin: string = this.baseCoins[i];
+      // find all arb paths
+      // console.log(`Finding arb paths for: ${coin}`);
 
-    // find all arb paths
-    console.log(`Finding arb paths for: ${this.baseCoins.join(', ')}`);
-    let finder = new PathFinder(this.markets, this.baseCoins, quint);
-    this.baseCoins.forEach((coin: string) => {
-      let trio = finder.getByCoinTrio(coin);
-      let quad = finder.getByCoinQuad(coin);
-      let quint = finder.getByCoinQuint(coin);
-      this.paths = this.paths.concat(trio, quad, quint);
-      console.log(`trio: ${trio.length} quad: ${quad.length} quint: ${quint.length}`);
-    });
-    console.log(`${this.paths.length} paths`);
-    console.log();
-  };
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const arbiWorker = await spawn(new Worker('./workers/arbiWorker'));
+        arbiWorker.start(startCoin, this.fee, this.triangle, this.square, this.penta);
+        arbiWorker.values().subscribe(({ coin, code, data }) => {
+          switch (code) {
+            case 1:
+              console.log(`${coin} active markets: ${data}`);
+              break;
+            case 23:
+            case 24:
+            case 25:
+              console.log(`${coin} ${this.arbTypes.get(code)} arbs: ${data}`);
+              break;
+            case 3:
+              console.log(`${coin} updated: ${data}s`);
+              break;
+            case 666:
+              const arb = new Arb(coin, data.score, data.actions);
+              // TODO purely for dev purposes when not executing the trade to not skew results by counting the same arb multiple times
+              let skip = false;
+              const same = this.arbs.filter((arbOld: Arb) => arb.hash() === arbOld.hash());
+              same.forEach((sameArb: Arb) => {
+                if (
+                  arb.timestamp - sameArb.timestamp < 100000 &&
+                  Math.abs(sameArb.score - arb.score) < 0.01
+                ) {
+                  console.log(`${coin} ${arb.hash()} SAME`);
+                  skip = true;
+                }
+              });
+              if (!skip) {
+                this.arbs.push(arb);
+                let res = this.results.get(coin);
+                if (res == undefined) {
+                  res = { score: 0, arbs: 0 };
+                }
+                res.score += arb.score;
+                res.arbs++;
+                this.results.set(coin, res);
+              }
 
-  start = () => {
-    // connect to ws for book ticker updates
-    this.exchange.startWs((tickers: any) => {
-      let start = new Date().getTime();
-      tickers.forEach((ticker: any) => {
-        this.markets.get(ticker.symbol)?.update(ticker);
-      });
-
-      this.paths.forEach(p => {
-        // if (p.markets[0].symbol == 'LTCUSDT') console.log(p.markets[0].updated);
-        if (p.markets.some(market => market.updated)) {
-          let score = p.calculate(this.fee);
-          if (score > 0.1) {
-            this.arbs.push(p);
-            this.perc += score;
-            this.usedPaths.push(p.toString());
-            this.hashes.push(p.hash());
+              console.log(arb.toString());
+              break;
+            default:
+              break;
           }
-        }
-      });
-
-      this.markets.forEach((market: Market) => {
-        market.updated = false;
-      });
-      let unique = [...new Set(this.usedPaths)];
-      let unique1 = [...new Set(this.hashes)];
-      console.log(
-        `${this.baseCoins[0]} hashes: ${unique1.length} paths: ${unique.length} arbs: ${
-          this.arbs.length
-        } profit: ${Math.round(this.perc * 100) / 100}%`
-      );
-      let time = (new Date().getTime() - start) / 1000;
-      if (time > 1) {
-        console.log(`>>>> ${this.baseCoins[0]} ${time}s`);
+        });
+        this.coinWorkers.set(startCoin, arbiWorker);
+      } catch (e) {
+        console.log(e);
       }
-    });
+    }
   };
 
-  stop = () => {
-    this.exchange.websocket.close();
+  stop = (coin: string) => {
+    // this.exchange.websocket.close();
   };
 }

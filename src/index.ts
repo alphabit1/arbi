@@ -1,22 +1,19 @@
-import { spawn, Thread, Worker } from 'threads';
 import Arbi from './Arbi';
-import { ArbiStarter } from './workers/arbiStarter';
-const threaded = true;
+
 const fee = 0.075;
-const quint = true;
-let baseCoins: string[] = ['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD', 'EUR', 'GBP', 'TRX', 'XRP'];
+const baseCoins: string[] = [
+  'BTC',
+  'BNB',
+  'LTC',
+  'ETH',
+  'USDT',
+  'BUSD',
+  'EUR',
+  'GBP',
+  'TRX',
+  'XRP'
+];
 (async () => {
-  if (threaded) {
-    baseCoins.forEach(async (coin: string) => {
-      const arbiStarter: ArbiStarter = await spawn<ArbiStarter>(
-        new Worker('./workers/arbiStarter')
-      );
-      arbiStarter.start([coin], fee, quint);
-    });
-  } else {
-    let arbi = new Arbi(baseCoins, fee);
-    arbi.init(quint).then(() => {
-      arbi.start();
-    });
-  }
+  const arbi = new Arbi(['BTC', 'LTC'], fee, true, true, false);
+  arbi.start();
 })();
