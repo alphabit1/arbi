@@ -44,16 +44,15 @@ export default class Path {
     let coinsPreFee = 0;
     let string = '';
     this.markets.forEach((market: Market) => {
-      coins = roundFloor(coins, market.lotPrecision);
       tradeCoins = coins;
       if (current == market.baseAsset) {
         price = market.bid;
-        coins = roundFloor(coins * price, market.lotPrecision);
+        coins *= price;
         current = market.quoteAsset;
       } else {
         type = 'buy';
         price = market.ask;
-        coins = roundFloor(coins / price, market.lotPrecision);
+        coins /= price;
         current = market.baseAsset;
       }
       coinsPreFee = coins;

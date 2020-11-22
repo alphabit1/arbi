@@ -12,7 +12,7 @@ export default class Arbi {
 
   fee = 0.075;
   perc = 0;
-  threshold = -0.1;
+  threshold = 0.01;
   score = 0;
 
   penta: boolean;
