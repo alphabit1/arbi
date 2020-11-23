@@ -68,24 +68,25 @@ export default class Path {
         type = 'buy';
         price = market.ask;
         // string += ` >${size}:${market.askQuantity}< `;
-        let baseSize = roundFloor(size / price, market.lotPrecision);
-        if (baseSize > market.askQuantity) {
+        resultPreFee = roundFloor(size / price, market.lotPrecision);
+        if (resultPreFee > market.askQuantity) {
           result = 0;
           // string += ` >${size}:${market.askQuantity}< `;
           // console.log(` ${baseSize} : ${market.askQuantity}`);
           break;
         }
-        // 32.61070713152678
-        // 0.11402597402597661
+        // ETHBUSD buy ETH 0.03453 @ 579.78000000 total 20.019803399999997 BUSD
+        // LTCETH buy LTC 0.232 @ 0.14882000 total 0.03452624000000001 ETH
+        // LTCBUSD sell LTC 0.232 @ 86.36000000 total 20.03552 BUSD
+        // 0.0775224775224885
         // let realSize = size / price;
-        resultPreFee = baseSize;
+
         // let xresultPreFee = roundFloor(size / price, market.baseAssetPrecision);
         current = market.baseAsset;
-        string += `${market.symbol} ${type} ${market.baseAsset} ${baseSize} @ ${price} total ${resultPreFee} ${market.quoteAsset}\n`;
-        string += `${market.symbol} ${type} ${market.baseAsset} ${baseSize} @ ${price} total ${
-          baseSize * price
+        string += `${market.symbol} ${type} ${market.baseAsset} ${resultPreFee} @ ${price} total ${
+          resultPreFee * price
         } ${market.quoteAsset}\n`;
-        size = baseSize;
+        size = resultPreFee;
       }
 
       result = resultPreFee - (resultPreFee / 100) * this.fee;
