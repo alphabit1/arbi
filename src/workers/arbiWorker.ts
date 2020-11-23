@@ -1,3 +1,4 @@
+import Path from '../Path';
 import { Observable, Subject } from 'threads/observable';
 import { expose } from 'threads/worker';
 import Exchange from '../Exchange';
@@ -32,15 +33,24 @@ const arbiWorker = {
 
     // find all arb paths
     const finder = new PathFinder(markets, fee, triangle, square, penta);
-    const trianglePaths = finder.findTriangle(coin);
-    next(coin, 23, trianglePaths.length);
-    const squarePaths = finder.findSquare(coin);
-    next(coin, 24, squarePaths.length);
-    const pentaPaths = finder.findPenta(coin);
-    next(coin, 25, pentaPaths.length);
-    const paths = trianglePaths.concat(squarePaths, pentaPaths);
-    next(coin, 20, paths.length);
+    let trianglePaths: Path[] = [];
+    let squarePaths: Path[] = [];
+    let pentaPaths: Path[] = [];
+    let paths: Path[] = [];
 
+    try {
+      trianglePaths = finder.findTriangle(coin);
+      next(coin, 23, trianglePaths.length);
+      squarePaths = finder.findSquare(coin);
+      next(coin, 24, squarePaths.length);
+      pentaPaths = finder.findPenta(coin);
+      next(coin, 25, pentaPaths.length);
+      paths = trianglePaths.concat(squarePaths, pentaPaths);
+      next(coin, 20, paths.length);
+    } catch (e) {
+      return;
+      console.log(e);
+    }
     // connect to ws for book ticker updates
     exchange.startWs((tickers: any) => {
       const start = new Date().getTime();

@@ -9,13 +9,13 @@ import Action from './Action';
 import Arb from './Arb';
 
 export default class Arbi {
-  baseCoins: string[] = ['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'];
+  baseCoins: string[] = [];
 
   fee = 0.075;
 
   perc = 0;
 
-  threshold = 0.01;
+  threshold = 0;
 
   score = 0;
 
@@ -28,7 +28,11 @@ export default class Arbi {
   coinWorkers: Map<string, any> = new Map();
 
   arbs: Arb[] = [];
-
+  //   ✖ 0.15min - 3 - 0.6733622750000339
+  // buy ADAEUR 16.86844799 EUR @ 0.12664000 = 133.19999992 ADA
+  // sell ADABUSD 133.3 ADA @ 0.15005000 = 20.001665 BUSD
+  // buy EURBUSD 20.012881 BUSD @ 1.18630000 = 16.87 EUR
+  // 0.1000000000000049
   results: Map<
     string,
     {
@@ -97,7 +101,6 @@ export default class Arbi {
           this.square,
           this.penta
         );
-
         arbiWorker.values().subscribe(({ coin, code, data }) => {
           let res = this.results.get(coin);
           if (res == undefined) {

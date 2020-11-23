@@ -42,44 +42,68 @@ export default class Path {
     let current: string = this.coin;
     let price = 0;
     const actions: Action[] = [];
-    let size = 0;
+    let size = startAmount;
     let resultPreFee = 0;
     let string = '';
     let result = 0;
-    this.markets.forEach((market: Market) => {
-      size = result === 0 ? startAmount : result;
-      const precur = current;
+    let first = true;
+    let cstr = '';
+    let baseSize = 0;
+    for (let i = 0; i < this.markets.length; i++) {
+      const market = this.markets[i];
+      const previous = current;
+      cstr += `${current}->`;
       if (current === market.baseAsset) {
         type = 'sell';
         price = market.bid;
         size = roundFloor(size, market.lotPrecision);
+        if (size > market.bidQuantity) {
+          result = 0;
+          break;
+        }
         resultPreFee = roundFloor(size * price, market.quoteAssetPrecision);
         current = market.quoteAsset;
+        string += `${market.symbol} ${type} ${market.baseAsset} ${size} @ ${price} total ${resultPreFee} ${current}\n`;
       } else {
         type = 'buy';
         price = market.ask;
-        size = roundFloor(
-          roundFloor(size / price, market.lotPrecision) * price,
-          market.quoteAssetPrecision
-        );
-        resultPreFee = roundFloor(size / price, market.baseAssetPrecision);
+        // string += ` >${size}:${market.askQuantity}< `;
+        let baseSize = roundFloor(size / price, market.lotPrecision);
+        if (baseSize > market.askQuantity) {
+          result = 0;
+          // string += ` >${size}:${market.askQuantity}< `;
+          // console.log(` ${baseSize} : ${market.askQuantity}`);
+          break;
+        }
+        // 32.61070713152678
+        // 0.11402597402597661
+        // let realSize = size / price;
+        resultPreFee = baseSize;
+        // let xresultPreFee = roundFloor(size / price, market.baseAssetPrecision);
         current = market.baseAsset;
+        string += `${market.symbol} ${type} ${market.baseAsset} ${baseSize} @ ${price} total ${resultPreFee} ${market.quoteAsset}\n`;
+        string += `${market.symbol} ${type} ${market.baseAsset} ${baseSize} @ ${price} total ${
+          baseSize * price
+        } ${market.quoteAsset}\n`;
+        size = baseSize;
       }
+
       result = resultPreFee - (resultPreFee / 100) * this.fee;
-      string += `${type} ${market.symbol} ${size} ${precur} @ ${price} = ${resultPreFee} ${current}\n`;
-      actions.push(
-        new Action(
-          market.symbol,
-          market.baseAsset,
-          market.quoteAsset,
-          price,
-          size,
-          type,
-          resultPreFee,
-          result
-        )
-      );
-    });
+
+      // actions.push(
+      //   new Action(
+      //     market.symbol,
+      //     market.baseAsset,
+      //     market.quoteAsset,
+      //     price,
+      //     size,
+      //     type,
+      //     resultPreFee,
+      //     result
+      //   )
+      // );
+      size = result;
+    }
     const score = ((result - startAmount) / startAmount) * 100;
     string += `${score}`;
     return {
