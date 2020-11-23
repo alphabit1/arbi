@@ -2,11 +2,13 @@ import Action from './Action';
 import Market from './Market';
 
 function roundFloor(number: number, prec: number) {
-  var tempnumber = number * Math.pow(10, prec);
+  let tempnumber = number * Math.pow(10, prec);
   tempnumber = Math.floor(tempnumber);
   return tempnumber / Math.pow(10, prec);
 }
-
+// buy MBLUSDT 19.99977 USDT @ 0.00145400 = 13755 MBL
+// sell MBLBNB 13753 MBL @ 0.00004850 = 0.6670205 BNB
+// sell BNBUSDT 0.666 BNB @ 30.08470000 = 20.0364102 USDT
 export default class Path {
   coin: string;
 
@@ -15,6 +17,7 @@ export default class Path {
   startCoins = 1;
 
   fee: number;
+
   // ✖ 0.18min - 6 - 1.199076103500692
   // sell BNBBUSD 0.657 BNB @ 30.45930000 = 20.0117601 BUSD
   // buy HARDBUSD 40.42375539 HARD @ 0.49500000 = 20.00975892 BUSD
@@ -35,44 +38,52 @@ export default class Path {
   // buy TRXBNB 1042 TRX @ 0.00095980 = 1 BNB
   // //
   calculate = (startAmount: number): { score: number; actions: Action[]; string: string } => {
-    let type = 'sell';
-    let coins: number = startAmount;
+    let type = '';
     let current: string = this.coin;
     let price = 0;
     const actions: Action[] = [];
-    let tradeCoins = coins;
-    let coinsPreFee = 0;
+    let size = 0;
+    let resultPreFee = 0;
     let string = '';
+    let result = 0;
     this.markets.forEach((market: Market) => {
-      tradeCoins = coins;
-      if (current == market.baseAsset) {
+      size = result === 0 ? startAmount : result;
+      const precur = current;
+      if (current === market.baseAsset) {
+        type = 'sell';
         price = market.bid;
-        coins *= price;
+        size = roundFloor(size, market.lotPrecision);
+        resultPreFee = roundFloor(size * price, market.quoteAssetPrecision);
         current = market.quoteAsset;
       } else {
         type = 'buy';
         price = market.ask;
-        coins /= price;
+        size = roundFloor(
+          roundFloor(size / price, market.lotPrecision) * price,
+          market.quoteAssetPrecision
+        );
+        resultPreFee = roundFloor(size / price, market.baseAssetPrecision);
         current = market.baseAsset;
       }
-      coinsPreFee = coins;
-      coins = roundFloor(coins - (coins / 100) * this.fee, market.lotPrecision);
-
+      result = resultPreFee - (resultPreFee / 100) * this.fee;
+      string += `${type} ${market.symbol} ${size} ${precur} @ ${price} = ${resultPreFee} ${current}\n`;
       actions.push(
         new Action(
           market.symbol,
           market.baseAsset,
           market.quoteAsset,
           price,
-          tradeCoins,
+          size,
           type,
-          coinsPreFee,
-          coins
+          resultPreFee,
+          result
         )
       );
     });
+    const score = ((result - startAmount) / startAmount) * 100;
+    string += `${score}`;
     return {
-      score: ((coins - startAmount) / startAmount) * 100,
+      score,
       actions,
       string
     };

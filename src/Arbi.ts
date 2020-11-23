@@ -1,18 +1,22 @@
 import { Observable, Subject } from 'threads/observable';
 import { spawn, Thread, Worker } from 'threads';
+import Spinnies from 'spinnies';
 import Exchange from './Exchange';
 import Market from './Market';
 import Path from './Path';
 import PathFinder from './PathFinder';
 import Action from './Action';
 import Arb from './Arb';
-import Spinnies from 'spinnies';
+
 export default class Arbi {
   baseCoins: string[] = ['BTC', 'BNB', 'LTC', 'ETH', 'USDT', 'BUSD'];
 
   fee = 0.075;
+
   perc = 0;
+
   threshold = 0.01;
+
   score = 0;
 
   penta: boolean;
@@ -57,7 +61,7 @@ export default class Arbi {
   ): Promise<number> => {
     if (coin == 'USDT') return +usd.toFixed(2);
 
-    const market = markets.get(coin + 'USDT');
+    const market = markets.get(`${coin}USDT`);
     if (market == undefined) return +usd.toPrecision(2);
     return +(usd / market.bid).toFixed(market.lotPrecision);
   };
@@ -153,7 +157,7 @@ export default class Arbi {
                   skip = true;
                 }
               });
-              let time = new Date().getTime() - totalTime;
+              const time = new Date().getTime() - totalTime;
               if (!skip) {
                 this.arbs.push(arb);
                 res.score += arb.score;
@@ -164,13 +168,13 @@ export default class Arbi {
                 spinnies.succeed('last', {
                   text: `${Math.round(time / 10 / 60) / 100}min - ${this.arbs.length} - ${
                     this.score
-                  }\n${arb.toStringFull()}`
+                  }\n${data.string}`
                 });
               } else {
                 spinnies.fail('last', {
                   text: `${Math.round(time / 10 / 60) / 100}min - ${this.arbs.length} - ${
                     this.score
-                  }\n${arb.toStringFull()}`
+                  }\n${data.string}`
                 });
               }
               break;
