@@ -6,9 +6,6 @@ function roundFloor(number: number, prec: number) {
   tempnumber = Math.floor(tempnumber);
   return tempnumber / Math.pow(10, prec);
 }
-// buy MBLUSDT 19.99977 USDT @ 0.00145400 = 13755 MBL
-// sell MBLBNB 13753 MBL @ 0.00004850 = 0.6670205 BNB
-// sell BNBUSDT 0.666 BNB @ 30.08470000 = 20.0364102 USDT
 export default class Path {
   coin: string;
 
@@ -18,11 +15,6 @@ export default class Path {
 
   fee: number;
 
-  // ✖ 0.18min - 6 - 1.199076103500692
-  // sell BNBBUSD 0.657 BNB @ 30.45930000 = 20.0117601 BUSD
-  // buy HARDBUSD 40.42375539 HARD @ 0.49500000 = 20.00975892 BUSD
-  // buy HARDBNB 0.65843712 HARD @ 0.01629000 = 40.419713009999995 BNB
-  // 0.2087184170471803
   constructor(coin: string, fee: number) {
     this.coin = coin;
     this.fee = fee;
@@ -33,84 +25,60 @@ export default class Path {
     return this;
   };
 
-  //   sell TRXNGN 680.97 TRX @ 14.25000000 = 9703.82 NGN
-  // buy BNBNGN 0.651 BNB @ 14899.00000000 = 9702.85 NGN
-  // buy TRXBNB 1042 TRX @ 0.00095980 = 1 BNB
-  // //
-  calculate = (startAmount: number): { score: number; actions: Action[]; string: string } => {
-    let type = '';
+  calculate = (startBalance: number): { score: number; string: string; profit: number } => {
     let current: string = this.coin;
-    let price = 0;
-    const actions: Action[] = [];
-    let size = startAmount;
-    let resultPreFee = 0;
+    let balance: number = startBalance;
     let string = '';
-    let result = 0;
-    let first = true;
-    let cstr = '';
-    let baseSize = 0;
-    for (let i = 0; i < this.markets.length; i++) {
+    for (let i = 0; i < this.markets.length; i += 1) {
       const market = this.markets[i];
-      const previous = current;
-      cstr += `${current}->`;
+      const trade = {
+        type: '',
+        price: 0,
+        size: 0,
+        total: 0,
+        liquidity: 0,
+        fee: 0,
+        symbol: market.symbol,
+        base: market.baseCommissionPrecision,
+        quote: market.quotePrecision
+      };
+
       if (current === market.baseAsset) {
-        type = 'sell';
-        price = market.bid;
-        size = roundFloor(size, market.lotPrecision);
-        if (size > market.bidQuantity) {
-          result = 0;
-          break;
-        }
-        resultPreFee = roundFloor(size * price, market.quoteAssetPrecision);
+        trade.type = 'sell';
+        trade.price = market.bid;
+        trade.size = roundFloor(balance, market.lotPrecision);
+        trade.liquidity = market.bidQuantity;
+        trade.total = +(trade.size * trade.price).toFixed(market.quoteAssetPrecision);
+        trade.fee = +((trade.total / 100) * this.fee).toFixed(market.quoteCommissionPrecision);
+
+        balance = +(trade.total - trade.fee).toFixed(market.quotePrecision);
         current = market.quoteAsset;
-        string += `${market.symbol} ${type} ${market.baseAsset} ${size} @ ${price} total ${resultPreFee} ${current}\n`;
       } else {
-        type = 'buy';
-        price = market.ask;
-        // string += ` >${size}:${market.askQuantity}< `;
-        resultPreFee = roundFloor(size / price, market.lotPrecision);
-        if (resultPreFee > market.askQuantity) {
-          result = 0;
-          // string += ` >${size}:${market.askQuantity}< `;
-          // console.log(` ${baseSize} : ${market.askQuantity}`);
-          break;
-        }
-        // ETHBUSD buy ETH 0.03453 @ 579.78000000 total 20.019803399999997 BUSD
-        // LTCETH buy LTC 0.232 @ 0.14882000 total 0.03452624000000001 ETH
-        // LTCBUSD sell LTC 0.232 @ 86.36000000 total 20.03552 BUSD
-        // 0.0775224775224885
-        // let realSize = size / price;
-
-        // let xresultPreFee = roundFloor(size / price, market.baseAssetPrecision);
+        trade.type = 'buy';
+        trade.price = market.ask;
+        trade.size = roundFloor(balance / trade.price, market.lotPrecision);
+        trade.liquidity = market.askQuantity;
+        trade.total = +(trade.size * trade.price).toFixed(market.baseAssetPrecision);
+        trade.fee = +((trade.size / 100) * this.fee).toFixed(market.baseCommissionPrecision);
+        balance = +(trade.size - trade.fee).toFixed(market.baseAssetPrecision);
         current = market.baseAsset;
-        string += `${market.symbol} ${type} ${market.baseAsset} ${resultPreFee} @ ${price} total ${
-          resultPreFee * price
-        } ${market.quoteAsset}\n`;
-        size = resultPreFee;
+        if (i === 0) {
+          startBalance = trade.total;
+        }
       }
-
-      result = resultPreFee - (resultPreFee / 100) * this.fee;
-
-      // actions.push(
-      //   new Action(
-      //     market.symbol,
-      //     market.baseAsset,
-      //     market.quoteAsset,
-      //     price,
-      //     size,
-      //     type,
-      //     resultPreFee,
-      //     result
-      //   )
-      // );
-      size = result;
+      if (trade.size > trade.liquidity) {
+        balance = 0;
+        break;
+      }
+      string += `${market.symbol} ${trade.type} ${trade.size} ${market.baseAsset} @ ${trade.price} total ${trade.total} ${market.quoteAsset}\n`;
     }
-    const score = ((result - startAmount) / startAmount) * 100;
-    string += `${score}`;
+
+    const score = ((balance - startBalance) / startBalance) * 100;
+    string += `start with ${startBalance} end with ${balance} = ${score}%`;
     return {
       score,
-      actions,
-      string
+      string,
+      profit: balance - startBalance
     };
   };
 }

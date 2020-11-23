@@ -1,6 +1,6 @@
-import Path from '../Path';
 import { Observable, Subject } from 'threads/observable';
 import { expose } from 'threads/worker';
+import Path from '../Path';
 import Exchange from '../Exchange';
 import PathFinder from '../PathFinder';
 
@@ -22,8 +22,8 @@ const arbiWorker = {
   async start(
     coin: string,
     startAmount: number,
-    fee: number,
     threshold: number,
+    fee: number,
     triangle: boolean,
     square: boolean,
     penta: boolean
@@ -49,7 +49,6 @@ const arbiWorker = {
       next(coin, 20, paths.length);
     } catch (e) {
       return;
-      console.log(e);
     }
     // connect to ws for book ticker updates
     exchange.startWs((tickers: any) => {
@@ -64,8 +63,7 @@ const arbiWorker = {
         if (calc.score > threshold) {
           next(coin, 666, {
             score: calc.score,
-            actions: calc.actions,
-            startAmount,
+            profit: calc.profit,
             string: calc.string
           });
         }
