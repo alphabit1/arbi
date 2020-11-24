@@ -1,5 +1,6 @@
 import binance from 'binance';
 import Market from './Market';
+import Trade from './Trade';
 
 const pairs = [
   {
@@ -49,8 +50,8 @@ class Exchange {
 
   constructor() {
     this.rest = new binance.BinanceRest({
-      key: '',
-      secret: '',
+      key: 'oUqVXgObtIf68wZPWhC7UlJr8ckMEcBSE0OfiWfCtspdHl52SuF3wNiYVX9xCNQD',
+      secret: 'gmFOR19YgcKaMqqpOVnpbOaJjcTQmNu1IiyNiihpOMqxMa1bZZUeQJwU6M6Ljc1X',
       disableBeautification: false,
       handleDrift: true
     });
@@ -60,6 +61,12 @@ class Exchange {
   startWs = (tickerCallback: any) => {
     this.websocket = this.ws.onAllTickers((data: any) => {
       tickerCallback(data);
+    });
+  };
+
+  startUserWs = (callback: any) => {
+    this.websocket = this.ws.onUserData(this.rest, (data: any) => {
+      callback(data);
     });
   };
 
@@ -89,6 +96,39 @@ class Exchange {
       if (ticker) markets.set(market.symbol, new Market(market, ticker));
     });
     return markets;
+  };
+
+  usdToCoin = (markets: Map<string, Market>, coin: string, usd: number) => {
+    if (coin == 'USDT') return +usd.toFixed(2);
+
+    const market = markets.get(`${coin}USDT`);
+    if (market == undefined) return +usd.toPrecision(2);
+    return +(usd / market.bid).toFixed(market.lotPrecision);
+  };
+
+  coinToUsd = (markets: Map<string, Market>, coin: string, amount: number) => {
+    if (coin === 'USDT') return +amount.toFixed(2);
+    const market = markets.get(`${coin}USDT`);
+    if (market === undefined) return +amount.toPrecision(2);
+    return +(amount * market.bid).toFixed(market.lotPrecision);
+  };
+
+  roundLot = (markets: Map<string, Market>, coin: string, amount: number) => {
+    if (coin === 'USDT') return +amount.toFixed(2);
+    const market = markets.get(`${coin}USDT`);
+    if (market === undefined) return +amount.toPrecision(2);
+    return +amount.toFixed(market.lotPrecision);
+  };
+
+  order = async (trade: Trade) => {
+    return this.rest.newOrder({
+      symbol: trade.symbol,
+      side: trade.type,
+      type: 'LIMIT',
+      quantity: trade.size,
+      price: trade.price,
+      timeInForce: 'GTC'
+    });
   };
 }
 export default Exchange;

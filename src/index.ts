@@ -1,11 +1,14 @@
 import Arbi from './Arbi';
 
-const fee = 0.075;
-const tradeSize = 20;
-const threshold = 0;
+const fee = 0.06;
+const tradeSize = 13;
+const threshold = 0.1;
+const triangle = true;
+const square = false;
+const penta = false;
 const baseCoins: string[] = [
   'BTC',
-  'BNB',
+  // 'BNB',
   'LTC',
   'ETH',
   'USDT',
@@ -16,6 +19,6 @@ const baseCoins: string[] = [
   'XRP'
 ];
 (async () => {
-  const arbi = new Arbi(baseCoins, fee, tradeSize, threshold, true, false, false);
+  const arbi = new Arbi(baseCoins, fee, tradeSize, threshold, triangle, square, penta);
   arbi.start();
 })();

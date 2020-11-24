@@ -64,7 +64,8 @@ const arbiWorker = {
           next(coin, 666, {
             score: calc.score,
             profit: calc.profit,
-            string: calc.string
+            string: calc.string,
+            trades: calc.trades
           });
         }
       });
