@@ -52,8 +52,8 @@ class Exchange {
     this.rest = new binance.BinanceRest({
       key: 'oUqVXgObtIf68wZPWhC7UlJr8ckMEcBSE0OfiWfCtspdHl52SuF3wNiYVX9xCNQD',
       secret: 'gmFOR19YgcKaMqqpOVnpbOaJjcTQmNu1IiyNiihpOMqxMa1bZZUeQJwU6M6Ljc1X',
-      disableBeautification: false,
-      handleDrift: true
+      disableBeautification: false
+      // handleDrift: true
     });
     this.ws = new binance.BinanceWS();
   }
