@@ -26,8 +26,9 @@ export default class Market {
   askQuantity: number;
   lotPrecision: number;
   stepSize: number;
-
+  symbolInfo: any;
   constructor(market: any, ticker: any) {
+    this.symbolInfo = market;
     this.symbol = market.symbol;
     this.status = market.status;
     this.baseAsset = market.baseAsset;
