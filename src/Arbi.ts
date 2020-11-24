@@ -266,12 +266,6 @@ export default class Arbi {
     const result = this.results.get(coin);
     if (result == undefined) return;
 
-    if (result.status !== 'watching') {
-      result.failed += 1;
-      this.results.set(coin, result);
-      this.logBusy(string);
-      return;
-    }
     try {
       result.current = string;
       this.results.set(coin, result);
