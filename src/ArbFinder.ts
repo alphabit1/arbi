@@ -1,7 +1,7 @@
 import ccxt from 'ccxt';
 import Arb from './Arb';
 
-export default class PathFinder {
+export default class ArbFinder {
   markets: { [id: string]: ccxt.Market };
 
   constructor(markets: { [id: string]: ccxt.Market }) {

@@ -5,8 +5,9 @@
  */
 import pino from 'pino';
 import * as ccxt from 'ccxt';
-import PathFinder from './PathFinder';
+import ArbFinder from './ArbFinder';
 import Arb from './Arb';
+import CoinWorker from './CoinWorker';
 
 export interface ArbiConfig {
   exchange: string;
@@ -29,6 +30,8 @@ export default class Arbi {
 
   activeMarkets: { [id: string]: ccxt.Market } = {};
 
+  coinWorkers: { [id: string]: CoinWorker } = {};
+
   constructor(config: ArbiConfig, log: pino.Logger) {
     this.log = log;
     this.config = config;
@@ -43,22 +46,30 @@ export default class Arbi {
     });
   }
 
-  start = async (): Promise<void> => {
-    await this.exchange.loadMarkets();
-    Object.keys(this.exchange.markets).forEach((symbol: string) => {
-      const market = this.exchange.markets[symbol];
+  start = (): void => {
+    this.exchange
+      .loadMarkets()
+      .then(this.init)
+      .catch(e => {
+        this.log.error(e);
+      });
+  };
+
+  init = (markets: ccxt.Dictionary<ccxt.Market>): void => {
+    Object.keys(markets).forEach((symbol: string) => {
+      const market = markets[symbol];
       if (market.active) {
         this.activeMarkets[symbol] = market;
       }
     });
 
     this.log.info(
-      `${Object.keys(this.exchange.markets).length} total ${
+      `${Object.keys(markets).length} total ${
         Object.keys(this.activeMarkets).length
       } active markets`
     );
 
-    const finder = new PathFinder(this.activeMarkets);
+    const finder = new ArbFinder(this.activeMarkets);
     for (let i = 0; i < this.config.baseCoins.length; i += 1) {
       const coin = this.config.baseCoins[i];
       let arbs: Arb[] = [];
@@ -71,7 +82,8 @@ export default class Arbi {
       if (this.config.penta) {
         //   arbs = arbs.concat(finder.findPenta(coin));
       }
-      console.log(arbs.length);
+      const worker = new CoinWorker(coin, arbs);
+      this.coinWorkers[coin] = worker;
     }
   };
 }
