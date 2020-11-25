@@ -1,0 +1,9 @@
+{
+  "exchange": "binance",
+  "minimumTradeSize": 13,
+  "threshold": 0.1,
+  "triangle": true,
+  "square": false,
+  "penta": false,
+  "baseCoins": ["BTC", "BNB", "LTC", "ETH", "USDT", "BUSD", "EUR", "GBP", "TRX", "XRP"]
+}

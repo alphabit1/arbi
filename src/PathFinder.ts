@@ -1,160 +1,80 @@
-import { runInThisContext } from 'vm';
-import Market from './Market';
-import Path from './Path';
+import ccxt from 'ccxt';
+import Arb from './Arb';
 
 export default class PathFinder {
-  markets: Market[];
+  markets: { [id: string]: ccxt.Market };
 
-  penta: boolean;
-
-  square: boolean;
-
-  triangle: boolean;
-
-  paths: Map<string, { triangle: Path[]; square: Path[]; penta: Path[] }> = new Map();
-
-  fee: number;
-
-  constructor(
-    markets: Map<string, Market>,
-    fee: number,
-    triangle = true,
-    square = true,
-    penta = true
-  ) {
-    this.markets = Array.from(markets, (market: any) => market[1]);
-    this.fee = fee;
-    this.penta = penta;
-    this.square = square;
-    this.triangle = triangle;
-    // this._findAll(coins);
+  constructor(markets: { [id: string]: ccxt.Market }) {
+    this.markets = markets;
   }
 
-  _endMarkets = (coin: string, otherCoin: string): Market[] => {
-    return this.markets.filter((market: Market) => {
-      return (
-        (coin == market.baseAsset && otherCoin == market.quoteAsset) ||
-        (coin == market.quoteAsset && otherCoin == market.baseAsset)
-      );
+  endMarkets = (coin: string, otherCoin: string): ccxt.Market[] => {
+    const markets: ccxt.Market[] = [];
+    Object.keys(this.markets).forEach((symbol: string) => {
+      const market = this.markets[symbol];
+      if (
+        (coin === market.base && otherCoin === market.quote) ||
+        (coin === market.quote && otherCoin === market.base)
+      ) {
+        markets.push(market);
+      }
     });
+    return markets;
   };
 
-  _coinMarkets = (coin: string): Market[] => {
-    return this.markets.filter((market: Market) => {
-      return coin == market.baseAsset || coin == market.quoteAsset;
+  coinMarkets = (coin: string): ccxt.Market[] => {
+    const markets: ccxt.Market[] = [];
+    Object.keys(this.markets).forEach((symbol: string) => {
+      const market = this.markets[symbol];
+      if (coin === market.base || coin === market.quote) {
+        markets.push(market);
+      }
     });
+    return markets;
   };
 
-  findTriangle = (coin: string): Path[] => {
-    if (!this.triangle) return [];
-    const paths: Path[] = [];
-    this._coinMarkets(coin).forEach((startMarket: Market) => {
-      const nextCoin =
-        startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
-      this._coinMarkets(nextCoin).forEach((triangleMarket: Market) => {
+  findTriangle = (coin: string): Arb[] => {
+    const arbs: Arb[] = [];
+    this.coinMarkets(coin).forEach((startMarket: ccxt.Market) => {
+      const nextCoin = startMarket.base === coin ? startMarket.quote : startMarket.base;
+      this.coinMarkets(nextCoin).forEach((triangleMarket: ccxt.Market) => {
         const triangleCoin =
-          triangleMarket.baseAsset == nextCoin
-            ? triangleMarket.quoteAsset
-            : triangleMarket.baseAsset;
-        this._endMarkets(coin, triangleCoin).forEach((endMarket: Market) => {
-          if (startMarket == triangleMarket || triangleMarket == endMarket) return;
-          const path = new Path(coin, this.fee);
-          path.addMarket(startMarket).addMarket(triangleMarket).addMarket(endMarket);
-          paths.push(path);
+          triangleMarket.base === nextCoin ? triangleMarket.quote : triangleMarket.base;
+        this.endMarkets(coin, triangleCoin).forEach((endMarket: ccxt.Market) => {
+          if (startMarket === triangleMarket || triangleMarket === endMarket) return;
+          const arb = new Arb(coin);
+          arb.addMarket(startMarket).addMarket(triangleMarket).addMarket(endMarket);
+          arbs.push(arb);
         });
       });
     });
-    return paths;
+    return arbs;
   };
 
-  findSquare = (coin: string): Path[] => {
-    if (!this.square) return [];
-    const paths: Path[] = [];
-    this._coinMarkets(coin).forEach((startMarket: Market) => {
-      const nextCoin =
-        startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
-      this._coinMarkets(nextCoin).forEach((triangleMarket: Market) => {
+  findSquare = (coin: string): Arb[] => {
+    const arbs: Arb[] = [];
+    this.coinMarkets(coin).forEach((startMarket: ccxt.Market) => {
+      const nextCoin = startMarket.base === coin ? startMarket.quote : startMarket.base;
+      this.coinMarkets(nextCoin).forEach((triangleMarket: ccxt.Market) => {
         const triangleCoin =
-          triangleMarket.baseAsset == nextCoin
-            ? triangleMarket.quoteAsset
-            : triangleMarket.baseAsset;
-        this._coinMarkets(triangleCoin).forEach((squareMarket: Market) => {
+          triangleMarket.base === nextCoin ? triangleMarket.quote : triangleMarket.base;
+        this.coinMarkets(triangleCoin).forEach((squareMarket: ccxt.Market) => {
           const squareCoin =
-            squareMarket.baseAsset == triangleCoin
-              ? squareMarket.quoteAsset
-              : squareMarket.baseAsset;
-          this._endMarkets(coin, squareCoin).forEach((endMarket: Market) => {
+            squareMarket.base === nextCoin ? squareMarket.quote : squareMarket.base;
+          this.endMarkets(coin, squareCoin).forEach((endMarket: ccxt.Market) => {
             if (
-              startMarket == triangleMarket ||
-              triangleMarket == squareMarket ||
-              squareMarket == endMarket
+              startMarket === triangleMarket ||
+              triangleMarket === squareMarket ||
+              squareMarket === endMarket
             )
               return;
-            const path = new Path(coin, this.fee);
-            path
-              .addMarket(startMarket)
-              .addMarket(triangleMarket)
-              .addMarket(squareMarket)
-              .addMarket(endMarket);
-            paths.push(path);
+            const arb = new Arb(coin);
+            arb.addMarket(startMarket).addMarket(triangleMarket).addMarket(endMarket);
+            arbs.push(arb);
           });
         });
       });
     });
-    return paths;
-  };
-
-  findPenta = (coin: string): Path[] => {
-    if (!this.penta) return [];
-    const paths: Path[] = [];
-    this._coinMarkets(coin).forEach((startMarket: Market) => {
-      const nextCoin =
-        startMarket.baseAsset == coin ? startMarket.quoteAsset : startMarket.baseAsset;
-      this._coinMarkets(nextCoin).forEach((triangleMarket: Market) => {
-        const triangleCoin =
-          triangleMarket.baseAsset == nextCoin
-            ? triangleMarket.quoteAsset
-            : triangleMarket.baseAsset;
-        this._coinMarkets(triangleCoin).forEach((squareMarket: Market) => {
-          const squareCoin =
-            squareMarket.baseAsset == triangleCoin
-              ? squareMarket.quoteAsset
-              : squareMarket.baseAsset;
-          this._coinMarkets(squareCoin).forEach((pentaMarket: Market) => {
-            const pentaCoin =
-              pentaMarket.baseAsset == squareCoin ? pentaMarket.quoteAsset : pentaMarket.baseAsset;
-
-            this._endMarkets(coin, pentaCoin).forEach((endMarket: Market) => {
-              if (
-                startMarket == triangleMarket ||
-                triangleMarket == squareMarket ||
-                squareMarket == pentaMarket ||
-                pentaMarket == endMarket
-              )
-                return;
-              const path = new Path(coin, this.fee);
-              path
-                .addMarket(startMarket)
-                .addMarket(triangleMarket)
-                .addMarket(squareMarket)
-                .addMarket(pentaMarket)
-                .addMarket(endMarket);
-              paths.push(path);
-            });
-          });
-        });
-      });
-    });
-    return paths;
-  };
-
-  findAll = (coins: string[]): void => {
-    coins.forEach((coin: string) => {
-      this.paths.set(coin, {
-        triangle: this.findTriangle(coin),
-        square: this.findSquare(coin),
-        penta: this.findPenta(coin)
-      });
-    });
+    return arbs;
   };
 }
